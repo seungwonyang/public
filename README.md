@@ -1,13 +1,13 @@
+<strong>ISCRAM_phaseVis.pdf</strong>
+ <br>Paper explaining PhaseVis tool. Presented at
+  ISCRAM 2013
+  
 <strong>custom_stops.txt</strong>
  <br>it contains custom-added stop words
 
 <strong>ext_profile_location.py</strong>
  <br>it extracts Twitter user's location by visiting 
   the users' Twitter page
-
-<strong>ISCRAM_phaseVis.pdf</strong>
- <br>Paper explaining PhaseVis tool. Presented at
-  ISCRAM 2013
 
 <strong>lda_isaac12_resources.py</strong>
  <br>it runs LDA algorithm on a bunch of tweets about
