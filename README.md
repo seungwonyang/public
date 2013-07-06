@@ -5,6 +5,10 @@
  <br>it extracts Twitter user's location by visiting 
   the users' Twitter page
 
+<strong>ISCRAM_phaseVis.pdf</strong>
+ <br>Paper explaining PhaseVis tool. Presented at
+  ISCRAM 2013
+
 <strong>lda_isaac12_resources.py</strong>
  <br>it runs LDA algorithm on a bunch of tweets about
   Hurricane Isaac disaster in 2012, then generates
