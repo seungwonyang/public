@@ -1,7 +1,7 @@
 Brief description of the files in this repository:
 
 custom_stops.txt
- :it contains custom-added stop words
+ <br>:it contains custom-added stop words
 
 ext_profile_location.py
  :it extracts Twitter user's location by visiting 
