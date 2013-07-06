@@ -1,5 +1,3 @@
-Brief description of the files in this repository:
-
 <strong>custom_stops.txt</strong>
  <br>it contains custom-added stop words
 
