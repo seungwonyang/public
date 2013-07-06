@@ -1,6 +1,6 @@
 Brief description of the files in this repository:
 
-custom_stops.txt
+<strong>custom_stops.txt</strong>
  <br>:it contains custom-added stop words
 
 ext_profile_location.py
