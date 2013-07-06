@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <link rel="stylesheet" type="text/css" media="screen" href="jqgrid/css/smoothness/jquery-ui-1.9.0.custom.css"
+        />
+        <link rel="stylesheet" type="text/css" media="screen" href="jqgrid/css/ui.jqgrid.css"
+        />
+        <script type="text/javascript" src="d3.v2.js"></script>
+        <script type="text/javascript" src="jquery.js"></script>
+        <script type="text/javascript" src="updated_data.js"></script>
+        <script type="text/javascript" src="JsonEx3.js"></script>
+        <script src="haeyong_data4.js"></script>
+        <script src="timeSubset6.js"></script>
+        <link href='http://fonts.googleapis.com/css?family=Lobster' rel='stylesheet'
+        type='text/css'>
+        <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+        <style type="text/css" media="all">
+            body {
+                padding-top: 60px;
+                padding-bottom: 40px;
+            }
+        </style>
+        <style type="text/css">
+            /* sigma.js context : */
+            .sigma-parent {
+                position: absolute;
+                border-radius: 4px;
+                -moz-border-radius: 4px;
+                -webkit-border-radius: 4px;
+                background: #222;
+                height: 470px;
+                width: 500px;
+            }
+            .sigma-expand {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0
+            }
+            .buttons-container {
+                position: absolute;
+                padding-bottom: 8px;
+                padding-top: 12px;
+                z-index: 3;
+            }
+            .map_canvas {
+                position: absolute;
+                border-radius: 4px;
+                -moz-border-radius: 4px;
+                -webkit-border-radius: 4px;
+                background: #222;
+                height: 300px;
+            }
+
+        </style>
+        <style type="text/css">
+            {
+                padding:0;
+                margin:0;
+            }
+            #map_div {
+                width:400px;
+                height:400px;
+                border:6px solid #F4F4F4;
+                margin:200px auto 0 auto;
+            }
+        </style>
+        <script src="http://sigmajs.org/js/prettify.js"></script>
+        <!-- script src="http://sigmajs.org/js/sigma.min.js"></script -->
+        <script src="sigma.min.hae.js"></script>
+        <script src="http://sigmajs.org/js/sigma.forceatlas2.js"></script>
+        <script src="jqgrid/js/i18n/grid.locale-en.js" type="text/javascript"></script>
+        <script src="jqgrid/js/jquery.jqGrid.min.js" type="text/javascript"></script>
+        <style type="text/css">
+            #stack {
+                font: 10px sans-serif;
+            }
+            line, path {
+                fill:none;
+                stroke:#000;
+                shape-rendering:crispEdges;
+            }
+        </style>
+    </head>
+    
+    <body>
+        <div id="stack">
+            <button onclick="transition()">Unfix</button>
+            <br />
+        </div>
+        <table id="list">
+            <tr>
+                <td/>
+            </tr>
+        </table>
+        <div id="pager"></div>
+        <div id="local_info" style="width:100px; height:100px;top:50px;left:400px;position:absolute;font: 15px sans-serif;color:white;"></div>
+        <div class="container">
+            <div class="row">
+                <div class="span12 buttons-container" style="top:40px;left:1000px;">
+                    <button class="btn" id="stop-layout">Connect Nodes</button>
+                    <button class="btn" id="rescale-graph">Rescale Graph</button>
+                    <!-- button class="btn" id="update">Udate Test</button -->
+                </div>
+                <div class="span12 sigma-parent" style="top:40px;left:1000px;" id="sigma-example-parent">
+                    <div class="sigma-expand" id="sigma-example"></div>
+                </div>
+            </div>
+        </div>
+        <p>
+            <div id="map_canvas" style="width: 500px; height: 400px; top:-420px;left:990px;">map div</div>
+            <button id="drop">Drop Markers</button>
+            <button id="remv">Remove Markers</button>
+            <script type="text/javascript">
+                /*function showExcel(l,r,data){//l,r left and right timestamp bound
+        for(var i=0;i<data.length;i++){
+            for(var j=0;j<data[i].length;j++){
+                if(data[i][time]>=l&&data[i][time]<=r){
+                    $('#list').addRowData({colN[0]:data[i][j][0],colN[1]:data[i][j][1],colN[2]:data[i][j][2],colN[3]:data[i][j][3],colN[4]:data[i][j][4],colN[5]:data[i][j][5]});
+                }
+            }
+        }
+    }*/
+                //////////////////////////////////////////////////////////////////////////
+
+                function chkNodesforData(nodename, dataID) {
+
+                    //if (hdata.graph[i].timestamp == data[i][j][time])
+
+                    for (var i = 0; i < hdata.graph.length; i++) {
+                        if (hdata.graph[i].id == dataID && (hdata.graph[i].from_user == nodename || hdata.graph[i].to_user == nodename))
+                        //&& hdata.graph[i].timestamp >= left && hdata.graph[i].timestamp <= right) 
+                        {
+
+                            return true;
+                        }
+                    };
+                    return false;
+                };
+
+                function returnNode4ID(dataID) {
+
+                    //if (hdata.graph[i].timestamp == data[i][j][time])
+
+                    for (var i = 0; i < hdata.graph.length; i++) {
+                        if (hdata.graph[i].id == dataID)
+                        //&& hdata.graph[i].timestamp >= left && hdata.graph[i].timestamp <= right) 
+                        {
+
+                            return hdata.graph[i].from_user;
+                        }
+                    };
+
+                };
+
+                function generateTable(subsetData) {
+                    if (hdata == null) return 1;
+                    var htmlString = "<table><tr><th>From User</th><th>To User</th><th>Date/Time</th></tr>";
+                    for (var i = 0; i < subsetData.edges.length; i++) {
+                        htmlString += "<tr><td>" + subsetData.edges[i].from + "</td><td>" + subsetData.edges[i].to + "</td><td>" + subsetData.edges[i].datetime + "</td></tr>";
+                    }
+                    htmlString += "</table>";
+                    return htmlString;
+                }
+
+                function generateNodeList(subsetData) {
+                    if (hdata == null) return 1;
+                    var htmlString = "<table><tr>";
+                    for (var i = 0; i < subsetData.nodes.length; i++) {
+                        htmlString += "<td>" + subsetData.nodes[i] + "</td>";
+                        if ((i + 1) % 3 == 0) htmlString += "</tr><tr>";
+                    }
+                    htmlString += "</tr></table>";
+                    return htmlString;
+                }
+
+
+                var s = parseInt(hdata.graph[0].timestamp);
+                var e = parseInt(hdata.graph[hdata.graph.length - 1].timestamp);
+                //var s = hdata.graph[0].timestamp;
+                //var e = hdata.graph[hdata.graph.length - 1].timestamp;
+                var curData;
+                var prevData = null;
+                //var tset = getSimpleTimeSubset(hdata, s, e);
+                ///
+                var neighborhoods = [];
+
+
+
+
+                //////////////////////////////////////////////////////////////////////////
+
+
+                function daGen(n, m, j) { //cos sin data generator, not used for this version now
+                    if (j == 0) {
+                        return d3.range(n).map(function () {
+                            var a = d3.range(0, m * Math.PI, Math.PI / 10).map(function (d) {
+                                return Math.sin(d) + 1.1;
+                            });
+                            return a.map(function (d, i) {
+                                return {
+                                    x: i,
+                                    y: d
+                                };
+                            });
+
+                        });
+                        /*var r= d3.range(n).map(function(){
+            var a=d3.range(0,m*Math.PI,Math.PI/10).map(function(d){
+                return Math.sin(d)+1.1;
+            });
+            return a.map(function(d,i){
+                return {x:i,y:d,y0:0};
+            });});
+            var t,u;
+            for(t=0;t<r[0].length;t++){
+                r[0][t].y0=r[0][t].y;
+            }
+            for(u=0;u<n-1;u++){
+                for(t=0;t<r[0].length;t++){
+                    r[u+1][t].y0=r[u][t].y;
+                }
+            }
+            return r;*/
+                    } else if (j == 1) {
+                        return d3.range(n).map(function () {
+                            var a = d3.range(0, m * Math.PI, Math.PI / 10).map(function (d) {
+                                return Math.cos(d) + 1.1;
+                            });
+                            return a.map(function (d, i) {
+                                return {
+                                    x: i,
+                                    y: d
+                                };
+                            });
+
+                        });
+                    }
+                }
+
+                var n = fdata.length,
+                    m = 6,
+                    //data0=d3.layout.stack().offset("wiggle")(daGen(n,m,0)),
+                    //data1=d3.layout.stack().offset("wiggle")(daGen(n,m,1)),
+                    data0 = d3.layout.stack().offset("wiggle")(fdata),
+                    //width=1000,
+                    //height=550,
+                    width = 950,
+                    height = 350,
+                    local_width = width / 2 - 280, //width/2-100,
+                    //local_width=width/2-300,//width/2-100,
+                    //local_height=height-400,//height-300,
+                    local_height = height - 140,
+                    rec_width = 20, //the width of rectangle
+                    //color=d3.interpolateRgb("#aad","#556"),
+                    //color=d3.interpolateRgb("rgb(0,255,0)","rgb(0,0,255)"),
+                    svg_left_margin = 20,
+                    flag = 0,
+                    button_flag = 0,
+                    my = d3.max(data0, function (d) {
+                        return d3.max(d, function (d) {
+                            return d.y0 + d.y;
+                        });
+                    });
+
+                var clst = ["4.Preparedness", "3.Mitigation", "2.Recovery", "1.Response"];
+                //var clst=["Preparedness","Mitigation","Recovery","Response"];
+
+                //var color=["#f70707","#F77F07","#F7F707","#F707F7"];
+
+                //var color=["#f70707","#000000","#F7F707","#F707F7"];
+                var color = ["#33FF33", "#33CC33", "#339933", "#336633"];
+                var area = d3.svg.area()
+                    .x(function (d) {
+                    return ((d.x - LTime) * width / (RTime - LTime));
+                })
+                //.y0(function(d){return (height/2-d.y0/(n+1)*height/2);})
+                //.y1(function(d){return (height/2-(d.y0+d.y)/(n+1)*height.2);});
+                .y0(function (d) {
+                    return height - d.y0 / (my + 1) * height
+                })
+                    .y1(function (d) {
+                    return height - (d.y0 + d.y) / (my + 1) * height
+                });
+
+                var graph = d3.select("#stack")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height + 100);
+                //.append("g")
+                //.attr("transform","translate(50,0)");
+
+                graph.append("g")
+                    .attr("transform", "translate(" + svg_left_margin + ",0)")
+                    .selectAll("path")
+                    .data(data0)
+                    .enter()
+                    .append("path")
+                    .style("fill", function (d, i) {
+                    return color[i];
+                })
+                //return color(Math.random());})
+                .style("stroke", "none")
+                    .attr("d", area);
+
+                /*var xscale=d3.scale.linear()
+        .domain([LTime,RTime])
+        .range([0,width-svg_left_margin]);*/
+
+                var d1 = new Date(LTime * 1000),
+                    d2 = new Date(RTime * 1000);
+
+                var xscale = d3.time.scale()
+                    .domain([d1, d2])
+                    .range([0, width - svg_left_margin]);
+
+
+                //var xaxis=d3.svg.axis().scale(xscale).tickSubdivide(4);
+                var xaxis = d3.svg.axis().scale(xscale).tickSubdivide(0).ticks(d3.time.hours, 30).tickFormat(d3.time.format("%m/%d"));
+                //.style("fill","none")
+                //.style("stroke","#555")
+                //.style("shape-rendering","crispEdges");
+
+                graph.append("g")
+                    .attr("transform", "translate(" + svg_left_margin + "," + (height + 50) + ")")
+                    .call(xaxis);
+
+                function transition() {
+                    /*d3.selectAll("path")
+            .data(function(){
+                var d=data1;
+                data1=data0;
+                return data0=d;
+            })
+            .transition()
+            .duration(2400)
+            .attr("d",area);*/
+                    flag = 0;
+                }
+
+                /*graph.append("div")
+        .attr("width","100")
+        .attr("height",height)
+        .style("display","inline-block")
+        .style("background","red");*/
+
+                graph.append("rect")
+                    .attr("x", svg_left_margin)
+                    .attr("y", 29)
+                    .attr("width", rec_width)
+                    .attr("height", height)
+                    .attr("fill", "rgba(255,0,0,0.25)")
+                //.attr("opacity",0.5)
+                .attr("stroke", "black")
+                    .attr("stroke-width", "2px")
+                    .attr("id", "rec");
+
+                /*graph.append("rect")
+        .attr("x",svg_left_margin)
+        .attr("y",29)
+        .attr("width",local_width)
+        .attr("height",local_height)
+        .attr("fill","rgba(0,0,0,0.75)")
+        //.attr("opacity",0.5)
+        //.attr("stroke","red")
+        //.attr("stroke-width","2px")
+        .attr("id","local_info");*/
+                var colN = ['ID', 'is_R', 'Text', 'Class', 'Date', 'Timestamp'];
+
+                var leftT = 0;
+                var rightT = 0;
+
+                $(document).ready(function () {
+                    ///////////////////////////////////////
+
+                    var sigInst = sigma.init(document.getElementById('sigma-example')).drawingProperties({
+                        defaultLabelColor: '#fff',
+                        defaultLabelSize: 12,
+                        defaultLabelBGColor: '#fff',
+                        defaultLabelHoverColor: '#000',
+                        labelThreshold: 4,
+                        defaultEdgeType: 'curve',
+                        hoverFontStyle: "bold",
+                        activeFontStyle: "bold"
+
+                    }).graphProperties({
+                        minNodeSize: 3,
+                        maxNodeSize: 3,
+                        minEdgeSize: 1,
+                        maxEdgeSize: 1
+                    }).mouseProperties({
+                        //minRatio: 3, // How far can we zoom out?
+                        maxRatio: 20 // How far can we zoom in?
+                    });
+
+                    sigInst.bind('downnodes', function (event) {
+                        var nodes = event.content;
+                        console.log(nodes + "::test");
+                        var ttt = 0;
+                        // tweet displays //
+                        $('#list').jqGrid('clearGridData');
+
+
+                        for (var i = 0; i < data.length; i++) {
+                            for (var j = 0; j < data[i].length; j++) {
+                                if (data[i][j][time] >= leftT && data[i][j][time] <= rightT) {
+                                    ttt++;
+
+
+                                    //alert(data[i][j][time]);
+
+
+                                    if (chkNodesforData(nodes, data[i][j][0])) {
+                                        $('#list').addRowData(ttt, {
+                                            'ID': data[i][j][0],
+                                            'is_R': data[i][j][1],
+                                            'Text': data[i][j][2],
+                                            'Class': data[i][j][3],
+                                            'Date': data[i][j][4],
+                                            'Timestamp': data[i][j][5]
+                                        });
+                                    }
+                                }
+                            }
+                        }
+
+                        returnMarker(nodes);
+                        // tweet displays //
+
+
+
+
+                    });
+
+
+                    var isRunning = true;
+                    document.getElementById('stop-layout').addEventListener('click', function () {
+                        if (isRunning) {
+                            isRunning = false;
+                            sigInst.stopForceAtlas2();
+                            document.getElementById('stop-layout').childNodes[0].nodeValue = 'Restart Layout';
+                        } else {
+                            isRunning = true;
+                            sigInst.startForceAtlas2();
+                            document.getElementById('stop-layout').childNodes[0].nodeValue = 'Connect Nodes';
+                        }
+                    }, true);
+                    document.getElementById('rescale-graph').addEventListener('click', function () {
+                        sigInst.position(0, 0, 1).draw();
+                    }, true);
+
+                    /* $('#update').on('click', function () {
+                        sigInst.addNode('n0');
+                        //sigInst.dropNode('n1');
+                        //sigInst.dropNode('n2');
+                        //sigInst.dropNode('n3');
+                        sigInst.position(0, 0, 1).draw();
+                    });*/
+
+
+
+
+                    /////////////googlemap/////////////////////////////////////////////////
+
+                    ///////////////////////////////
+                    var myCenter = new google.maps.LatLng(37.09024, -95.712891);
+
+
+                    var markers = [];
+                    var iterator = 0;
+
+                    var map;
+
+                    function initialize() {
+                        var mapOptions = {
+                            zoom: 4,
+                            mapTypeId: google.maps.MapTypeId.ROADMAP,
+                            center: myCenter
+                        };
+
+                        map = new google.maps.Map(document.getElementById('map_canvas'),
+                        mapOptions);
+                    }
+
+                    function drop() {
+                        for (var i = 0; i < neighborhoods.length; i++) {
+                            setTimeout(function () {
+                                addMarker();
+                            }, i * 1);
+                        }
+                    }
+
+
+                    var ArrowSVG = {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        fillColor: "red",
+                        fillOpacity: 0.6,
+                        scale: 4,
+                        strokeColor: "black",
+                        strokeWeight: 1,
+                        anchor: new google.maps.Point(0, 0)
+
+                    };
+
+
+
+                    function addMarker() {
+                        /*markers.push(new google.maps.Marker({
+                        position: neighborhoods[iterator],
+                        map: map,
+                        draggable: false//,
+                       // animation: google.maps.Animation.DROP
+                    }));*/
+
+                        markers.push(new google.maps.Marker({
+                            position: neighborhoods[iterator],
+                            clickable: false,
+                            icon:
+                            /*new google.maps.MarkerImage(
+              './marker.png',
+              null,
+              null,
+              new google.maps.Point(3, 3),
+              new google.maps.Size(6, 6))*/
+                            ArrowSVG,
+                            map: map
+                        }));
+
+                        iterator++;
+                    }
+
+
+
+                    var myInfoID = "",
+                        myInfoDate = "",
+                        myInfoContent = "";
+
+                    var myInfoTitle = "";
+
+                    function addMarker2(from, lat, lng) {
+
+
+                        var marker1 = new google.maps.Marker({
+                            position: new google.maps.LatLng(lat, lng),
+                            icon: ArrowSVG,
+                            map: map,
+                            title: from
+                        });
+
+                        markers.push(marker1);
+                        iterator++;
+
+
+
+
+                        // Add listener for a click on the pin
+                        google.maps.event.addListener(marker1, 'click', function () {
+
+                            myInfoTitle = marker1.title;
+                            var infowindow1 = new google.maps.InfoWindow({
+                                //content:  createInfo('Evoluted New Media', 'Ground Floor,<br />35 Lambert Street,<br />Sheffield,<br />South Yorkshire,<br />S3 7BH<br /><a href="http://www.//evoluted.net" title="Click to view our website">Our Website</a>')
+
+                                content: createInfo(myInfoTitle)
+
+                            });
+                            infowindow1.open(map, marker1);
+
+                            setTimeout(function () {
+                                infowindow1.close(map, marker1);
+                            }, 3000);
+
+
+                            // console.log(marker1.title);
+
+                            var ttt = 0;
+                            // tweet displays //
+                            $('#list').jqGrid('clearGridData');
+
+
+                            for (var i = 0; i < data.length; i++) {
+                                for (var j = 0; j < data[i].length; j++) {
+                                    if (data[i][j][time] >= leftT && data[i][j][time] <= rightT) {
+                                        ttt++;
+
+
+                                        //alert(data[i][j][time]);
+
+
+                                        if (chkNodesforData(myInfoTitle, data[i][j][0])) {
+                                            $('#list').addRowData(ttt, {
+                                                'ID': data[i][j][0],
+                                                'is_R': data[i][j][1],
+                                                'Text': data[i][j][2],
+                                                'Class': data[i][j][3],
+                                                'Date': data[i][j][4],
+                                                'Timestamp': data[i][j][5]
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+
+                            // tweet displays //
+
+                            sigInst.refresh();
+                            if (isRunning) {
+                                isRunning = false;
+                                sigInst.stopForceAtlas2();
+                                document.getElementById('stop-layout').childNodes[0].nodeValue = 'Restart Layout';
+                                //console.log(sigInst._core.graph.nodesIndex['n6762']);
+                                
+                            }
+
+
+                            sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex[marker1.title]);
+                           
+
+                        });
+
+                    }
+
+                    function returnMarker(nodename) {
+                        if (nodename != null) {
+                            for (var i = 0; i < markers.length; i++) {
+                                if (markers[i].title == nodename) {
+                                    var infowindow1 = new google.maps.InfoWindow({
+
+                                        content: createInfo(markers[i].title)
+
+                                    });
+                                    infowindow1.open(map, markers[i]);
+
+                                    setTimeout(function () {
+                                        infowindow1.close(map, markers[i]);
+                                    }, 3000);
+
+                                }
+
+                            }
+                        }
+
+
+                    }
+
+                    // Add information window
+
+
+                    // Create information window
+                    function createInfo(from) {
+
+                        //return '<div class="infowindow">' + from + '<strong>' + date + '</strong><br />' + content + '</div>';
+
+                        return '<div class="infowindow"><p><center><strong>' + from + '</strong></center></div>'
+                    }
+
+                    // Sets the map on all markers in the array.
+                    function setAllMap(map) {
+                        for (var i = 0; i < markers.length; i++) {
+                            markers[i].setMap(map);
+                        }
+                    }
+
+                    // Removes the overlays from the map, but keeps them in the array.
+                    function clearOverlays() {
+                        setAllMap(null);
+                    }
+
+                    // Shows any overlays currently in the array.
+                    function showOverlays() {
+                        setAllMap(map);
+                    }
+
+                    // Deletes all markers in the array by removing references to them.
+                    function deleteOverlays() {
+
+                        clearOverlays();
+                        markers = [];
+                        iterator = 0;
+                    }
+
+
+
+
+                    $("#drop").on('click', drop)
+                    $("#remv").on('click', deleteOverlays)
+                    //////////////////////////////////////////////////////////////
+
+                    //var springy = jQuery('#springydemo').springy({
+                    //    graph: hgraph,
+                    //    nodeSelected: function (node) {
+                    //        console.log('Node selected: ' + JSON.stringify(node.data));
+                    //    }
+                    //});
+                    google.maps.event.addDomListener(window, 'load', initialize);
+
+                    /////////////////////////////////////////
+
+
+
+                    //the excel form under the graph
+                    $("#list").jqGrid({
+                        url: 'example.php',
+                        datatype: 'clientSide',
+                        mtype: 'GET',
+                        //colNames:['No.','ID', 'Text','Class','Date','Timestamp'],
+                        colNames: colN,
+                        colModel: [{
+                            name: colN[0],
+                            index: 'ID',
+                            width: 35
+                        }, {
+                            name: colN[1],
+                            index: 'is_R',
+                            width: 35
+                        }, {
+                            name: colN[2],
+                            index: 'text',
+                            width: 650,
+                            align: 'left'
+                        }, {
+                            name: colN[3],
+                            index: 'class',
+                            width: 70,
+                            align: 'center'
+                        }, {
+                            name: colN[4],
+                            index: 'date',
+                            width: 80,
+                            align: 'center'
+                        }, {
+                            name: colN[5],
+                            index: 'timestamp',
+                            width: 70,
+                            align: 'center'
+                        }],
+                        pager: '#pager',
+                        rowNum: 10,
+                        rowList: [10, 25, 30],
+                        sortname: 'invid',
+                        sortorder: 'desc',
+                        viewrecords: true,
+                        gridview: true,
+                        caption: 'Tweets in Selected Region',
+                        onSelectRow: function (id) {
+                            var s;
+                            s = jQuery("#list").jqGrid('getGridParam', 'selrow');
+                            if (s) {
+                                var ret = jQuery("#list").jqGrid('getRowData', s);
+                                //  alert("id="+ret.ID+" text="+ret.Text+"...");
+
+
+                                returnMarker(returnNode4ID(ret.ID));
+                                ///
+                                sigInst.refresh();
+                                if (isRunning) {
+                                    isRunning = false;
+                                    sigInst.stopForceAtlas2();
+                                    document.getElementById('stop-layout').childNodes[0].nodeValue = 'Restart Layout';
+                                    //console.log(sigInst._core.graph.nodesIndex['n6762']);
+                                    
+                                }
+
+
+                                sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex[returnNode4ID(ret.ID)]);
+                                ////
+
+                            }
+
+
+
+                        }
+                    });
+                    //$('#list').addRowData("1",{invid:"1",invdate:"dfdf",amount:"100",tax:"d100",total:"34324",note:"hello, this is the first."});
+                    //$('#list').addRowData('1',{'ID':"feef"});
+
+                    $("#list").parents('div.ui-jqgrid-bdiv').height(300);
+
+                    //the black window in the graph
+                    $("#local_info").css("width", local_width)
+                        .css("height", local_height)
+                        .css("background", "rgba(0,0,0,0.75)");
+
+                    //$("#sb").css("background","red");
+                    var temp1 = 0,
+                        temp2 = 0;
+                    $("#rec").hide("slow");
+                    $("#local_info").hide("slow");
+
+                    var MFlag = 1,
+                        MFlag2 = 1,
+                        lw = 0,
+                        rw = 0,
+                        flag_mdown = 0;
+
+                    $("svg").mousemove(function (e) {
+                        if (MFlag2 == 0) {
+
+
+                            var x = e.pageX - this.offsetLeft;
+                            if (x > lw) {
+                                var xr = Math.round((x - svg_left_margin) / (width - svg_left_margin) * (RTime - LTime)),
+                                    //local_data=[],
+                                    lr = Math.round((lw - svg_left_margin) / (width - svg_left_margin) * (RTime - LTime)),
+                                    format = d3.time.format("%H:%M %m/%d"),
+                                    dd = new Date((xr + LTime) * 1000),
+                                    xs = Math.round(xr / step),
+                                    ls = Math.round(lr / step);
+
+                                /*var leftT = LTime + Math.round(lr / step) * step - window_width / 2 + 1,
+                                    rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+                                */
+                                leftT = LTime + Math.round(lr / step) * step - window_width / 2 + 1;
+                                rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+                              
+
+
+
+                                var local_text = "" + format(new Date(leftT * 1000)) + "--" + format(new Date(rightT * 1000)) + ":";
+
+                                $("#local_info").text(local_text).append("<br/>");
+                                /*for(var t=0;t<n;t++){
+                //local_data.push(data0[t][xr].y);
+                //local_text+=("cluster#"+cluster_n[t]+":"+(fdata[t][xr].y-10)+"  ");
+                var sum=0;
+                for (var tt=0;tt<xs-ls+1;tt++){
+                    sum+=fdata[n-1-t][ls+tt].y-0.5;
+                }
+                $("#local_info").append((""+cluster_n[n-1-t]+":"+sum)).append("<br/>");
+            };*/
+                                var sum = 0;
+
+
+                                //selecting the tweets within leftT and rightT
+                                // data => tweets, first => classification, 2nd => id, 3rd => text, 4th => string time, 5th => numeric time 
+                                for (var i = 0; i < data.length; i++) {
+                                    sum = 0;
+
+                                    for (var j = 0; j < data[n - 1 - i].length; j++) {
+                                        if (data[n - 1 - i][j][time] >= leftT && data[n - 1 - i][j][time] <= rightT) {
+                                            sum++;
+                                        }
+                                    }
+                                    //$("#local_info").append((""+cluster_n[n-1-i]+":"+sum)).append("<br/>");
+                                    $("#local_info").append(("" + clst[n - 1 - i] + ":" + sum)).append("<br/>");
+                                };
+                                //$("#local_info").text(local_text);
+                                if (x > (20 + rec_width / 2 + 2) && x < (width - rec_width / 2 - 2)) { //within the range of the space
+                                    $("#rec").attr("x", lw - rec_width / 2 - 2)
+                                        .attr("y", 2)
+                                        .attr("height", height + 46)
+                                        .attr("width", x - lw + rec_width);
+                                    $("#rec").show();
+                                    if (x < 20 + width / 2) {
+                                        $("#local_info").css("left", x + 50 + this.offsetLeft)
+                                            .css("y", 50).show();
+
+                                    } else {
+                                        $("#local_info").css("left", x - 50 - local_width + this.offsetLeft)
+                                            .css("top", 50).show();
+                                    }
+                                } else {
+                                    $("#rec").hide("slow");
+                                    $("#local_info").hide("slow");
+                                }
+                                MFlag = 1;
+                            } else {
+                                var xr = Math.round((x - svg_left_margin) / (width - svg_left_margin) * (RTime - LTime)),
+                                    //local_data=[],
+                                    lr = Math.round((lw - svg_left_margin) / (width - svg_left_margin) * (RTime - LTime)),
+                                    format = d3.time.format("%H:%M %m/%d"),
+                                    dd = new Date((xr + LTime) * 1000),
+                                    xs = Math.round(xr / step),
+                                    ls = Math.round(lr / step);
+
+                                /* var leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1,
+                                    rightT = LTime + Math.round(lr / step) * step + window_width / 2;
+                                */
+                                leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1;
+                                rightT = LTime + Math.round(lr / step) * step + window_width / 2;
+                           
+                                var local_text = "" + format(new Date(leftT * 1000)) + "--" + format(new Date(rightT * 1000)) + ":";
+
+                                $("#local_info").text(local_text).append("<br/>");
+
+                                var sum = 0;
+                                for (var i = 0; i < data.length; i++) {
+                                    sum = 0;
+                                    for (var j = 0; j < data[n - 1 - i].length; j++) {
+                                        if (data[n - 1 - i][j][time] >= leftT && data[n - 1 - i][j][time] <= rightT) {
+                                            sum++;
+                                        }
+                                    }
+                                    //$("#local_info").append((""+cluster_n[n-1-i]+":"+sum)).append("<br/>");
+                                    $("#local_info").append(("" + clst[n - 1 - i] + ":" + sum)).append("<br/>");
+                                };
+                                //$("#local_info").text(local_text);
+                                if (x > (20 + rec_width / 2 + 2) && x < (width - rec_width / 2 - 2)) { //within the range of the space
+                                    $("#rec").attr("x", x - rec_width / 2 - 2)
+                                        .attr("y", 2)
+                                        .attr("height", height + 46)
+                                        .attr("width", lw - x + rec_width);
+                                    $("#rec").show();
+                                    if (x < 20 + width / 2) {
+                                        $("#local_info").css("left", x + 50 + this.offsetLeft)
+                                            .css("y", 50).show();
+
+                                    } else {
+                                        $("#local_info").css("left", x - 50 - local_width + this.offsetLeft)
+                                            .css("top", 50).show();
+                                    }
+                                } else {
+                                    $("#rec").hide("slow");
+                                    $("#local_info").hide("slow");
+                                }
+                                MFlag = 1;
+
+                            }
+
+                        } else {
+                            if (flag == 0) {
+                                var x = e.pageX - this.offsetLeft,
+                                    y = e.pageY - this.offsetTop,
+                                    xr = Math.round((x - svg_left_margin) / (width - svg_left_margin) * (RTime - LTime)),
+                                    //local_data=[],
+                                    format = d3.time.format("%H:%M %m/%d"),
+                                    dd = new Date((xr + LTime) * 1000);
+
+                                /*var leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1,
+                                    rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+                                */
+                                leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1;
+                                rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+                                var local_text = "" + format(new Date(leftT * 1000)) + "--" + format(new Date(rightT * 1000)) + ":";
+
+                                $("#local_info").text(local_text).append("<br/>");
+                                /*for(var t=0;t<n;t++){
+                //local_data.push(data0[t][xr].y);
+                //local_text+=("cluster#"+cluster_n[t]+":"+(fdata[t][xr].y-10)+"  ");
+                $("#local_info").append((""+cluster_n[n-1-t]+":"+(fdata[n-1-t][Math.round(xr/step)].y-0.1))).append("<br/>");
+            };*/
+                                var sum = 0;
+                                for (var i = 0; i < data.length; i++) {
+                                    sum = 0;
+                                    for (var j = 0; j < data[n - 1 - i].length; j++) {
+                                        if (data[n - 1 - i][j][time] >= leftT && data[n - 1 - i][j][time] <= rightT) {
+                                            sum++;
+                                        }
+                                    }
+                                    //$("#local_info").append((""+cluster_n[n-1-i]+":"+sum)).append("<br/>");
+                                    $("#local_info").append(("" + clst[n - 1 - i] + ":" + sum)).append("<br/>");
+                                };
+                                //$("#local_info").text(local_text);
+                                if ((x > (20 + rec_width / 2 + 2) && x < (width - rec_width / 2 - 2)) && (y > 2 && (y < height - 2))) { //within the range of the space
+                                    $("#rec").attr("x", x - rec_width / 2 - 2)
+                                        .attr("y", 2)
+                                        .attr("height", height + 46)
+                                        .attr("width", rec_width);
+                                    $("#rec").show();
+                                    if (x < 20 + width / 2) {
+                                        $("#local_info").css("left", x + 50 + this.offsetLeft)
+                                            .css("y", 50).show();
+
+                                    } else {
+                                        $("#local_info").css("left", x - 50 - local_width + this.offsetLeft)
+                                            .css("top", 50).show();
+                                    }
+                                } else {
+                                    $("#rec").hide("slow");
+                                    $("#local_info").hide("slow");
+                                }
+                            }
+                        }
+                        MFlag = 1;
+
+
+
+                        //$("#mouse").html(x+","+y);
+                    });
+
+
+
+                    $("svg").mousedown(function (e) {
+                        if (flag_mdown == 0 && flag == 0) {
+                            lw = e.pageX - this.offsetLeft;
+                            if (lw > (20 + rec_width / 2 + 2) && lw < (width - rec_width / 2 - 2)) {
+                                MFlag = 0; //for mouseup event to tell whether it's a click or a drag
+                                MFlag2 = 0; //for mousemove event to tell whether it's a click or a drag
+                            }
+                            flag_mdown = 1;
+                        }
+
+
+                    });
+
+
+
+                    $("svg").mouseup(function (e) {
+                        if (flag == 0 && lw > (20 + rec_width / 2 + 2) && lw < (width - rec_width / 2 - 2)) {
+                            flag_mdown = 0;
+                            if (MFlag == 1) { //drag function here
+                                MFlag = 1;
+                                MFlag2 = 1;
+                                flag = 1;
+                                var x = e.pageX - this.offsetLeft;
+
+                                var xr = Math.round((x - svg_left_margin) / (width - svg_left_margin) * (RTime - LTime)),
+                                    //local_data=[],
+                                    lr = Math.round((lw - svg_left_margin) / (width - svg_left_margin) * (RTime - LTime)),
+                                    format = d3.time.format("%H:%M %m/%d"),
+                                    dd = new Date((xr + LTime) * 1000),
+                                    xs = Math.round(xr / step),
+                                    ls = Math.round(lr / step);
+
+                                if (x > lw) {
+
+                                    /*var leftT = LTime + Math.round(lr / step) * step - window_width / 2 + 1,
+                                        rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+                                    */
+                                    leftT = LTime + Math.round(lr / step) * step - window_width / 2 + 1;
+                                    rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+
+                                    //////////////////////////////haeyong start/////////////////////////////////
+
+                                    var tset = getSimpleTimeSubset(hdata, leftT, rightT);
+
+
+                                    var i, N = 10,
+                                        E = 30,
+                                        C = 5,
+                                        d = 0.5,
+                                        clusters = [];
+
+                                    for (i = 0; i < C; i++) {
+                                        clusters.push({
+                                            'id': i,
+                                            'nodes': [],
+                                            'color': 'rgb(' + Math.round(Math.random() * 256) + ',' + Math.round(Math.random() * 256) + ',' + Math.round(Math.random() * 256) + ')'
+                                        });
+                                    }
+
+                                    for (i = 0; i < tset.nodes.length; i++) {
+                                        var cluster = clusters[(Math.random() * C) | 0];
+                                        sigInst.addNode(tset.nodes[i], {
+                                            'x': Math.random(),
+                                            'y': Math.random(),
+                                            // 'size':  0.5 + 4.5 * Math.random() ,
+                                            'size': 1,
+                                            'color': cluster['color'] //,
+                                            //'cluster': cluster['id']
+                                        });
+
+
+
+                                    }
+
+                                    for (i = 0; i < tset.edges.length; i++) {
+                                        sigInst.addEdge(tset.edges[i].eid, tset.edges[i].from, tset.edges[i].to);
+                                    }
+
+
+                                    var nodesformap = [];
+                                    neighborhoods = [];
+                                    deleteOverlays();
+                                    for (var i = 0; i < tset.nodes.length; i++) {
+                                        for (var i2 = 0; i2 < tset.edges.length; i2++) {
+                                            if (tset.nodes[i] == tset.edges[i2].from && parseInt(tset.edges[i2].lat) != 0) {
+                                                var lat1 = Math.random() * 0.1112;
+                                                var lat2 = Math.random() * 0.1112;
+
+
+                                                nodesformap.push({
+                                                    'id': tset.edges[i2].id,
+                                                    'name': tset.edges[i2].from,
+                                                    'timestamp': tset.edges[i2].timestamp,
+                                                    'lat': tset.edges[i2].lat,
+                                                    'lng': tset.edges[i2].lng
+                                                });
+                                                neighborhoods.push(new google.maps.LatLng(parseFloat(tset.edges[i2].lat) + lat1, parseFloat(tset.edges[i2].lng) + lat2));
+
+                                                addMarker2(tset.edges[i2].from, parseFloat(tset.edges[i2].lat) + lat1, parseFloat(tset.edges[i2].lng) + lat2);
+
+
+
+
+                                                break;
+                                            }
+                                        }
+
+                                    }
+
+
+                                    if (prevData != null) {
+                                        /////////////
+                                        var rNodes = getDiffNodes(prevData, tset, s, e);
+                                        for (var i = 0; i < rNodes.length; i++) {
+                                            sigInst.startForceAtlas2();
+                                            sigInst.dropNode(rNodes[i]);
+                                            //console.log(rNodes[i]);
+                                        }
+
+                                        //(getDiffNodes(prevData, subset, s, e)).forEach(hgraph.removeNode(nodes));
+                                        //console.log(getDiffNodes(prevData, subset, s, e))
+                                    }
+                                    //     console.log(JSON.stringify(getFormattedTimeSubset(data, s, e)))
+
+                                    // Start the ForceAtlas2 algorithm
+                                    // (requires "sigma.forceatlas2.js" to be included)
+                                    sigInst.startForceAtlas2();
+
+                                    sigInst.position(0, 0, 1).draw();
+
+                                    prevData = tset;
+
+                                    isRunning = true;
+
+                                    document.getElementById('stop-layout').childNodes[0].nodeValue = 'Connect Nodes';
+
+
+
+                                    ////////////////////////////////haeyong end///////////////////////////////////
+
+
+                                    var local_text = "" + format(new Date(leftT * 1000)) + "--" + format(new Date(rightT * 1000)) + ":";
+
+                                    $("#local_info").text(local_text).append("<br/>");
+
+                                    //local_data.push(data0[t][xr].y);
+                                    //local_text+=("cluster#"+cluster_n[t]+":"+(fdata[t][xr].y-10)+"  ");
+                                    var sum = 0;
+                                    for (var i = 0; i < data.length; i++) {
+                                        sum = 0;
+                                        for (var j = 0; j < data[n - 1 - i].length; j++) {
+                                            if (data[n - 1 - i][j][time] >= leftT && data[n - 1 - i][j][time] <= rightT) {
+                                                sum++;
+                                            }
+                                        }
+                                        //$("#local_info").append((""+cluster_n[n-1-i]+":"+sum)).append("<br/>");
+                                        $("#local_info").append(("" + clst[n - 1 - i] + ":" + sum)).append("<br/>");
+                                    };
+                                    //$("#local_info").text(local_text);
+                                    if (x > (20 + rec_width / 2 + 2) && x < (width - rec_width / 2 - 2)) { //within the range of the space
+                                        $("#rec").attr("x", lw - rec_width / 2 - 2)
+                                            .attr("y", 2)
+                                            .attr("height", height + 46)
+                                            .attr("width", x - lw + 20);
+                                        $("#rec").show();
+                                        if (x < 20 + width / 2) {
+                                            $("#local_info").css("left", x + 50 + this.offsetLeft)
+                                                .css("y", 50).show();
+
+                                        } else {
+                                            $("#local_info").css("left", x - 50 - local_width + this.offsetLeft)
+                                                .css("top", 50).show();
+                                        }
+                                    } else {
+                                        $("#rec").hide("slow");
+                                        $("#local_info").hide("slow");
+                                    }
+                                    //var leftT=LTime+Math.round(xr/step)*step-window_width/2+1,
+                                    //  rightT=LTime+Math.round(xr/step)*step+window_width/2,
+                                    var ttt = 0; //row counter
+                                    //alert(""+leftT+","+rightT);
+
+                                    // tweet displays //
+                                    $('#list').jqGrid('clearGridData');
+                                    for (var i = 0; i < data.length; i++) {
+                                        for (var j = 0; j < data[i].length; j++) {
+                                            if (data[i][j][time] >= leftT && data[i][j][time] <= rightT) {
+                                                ttt++;
+                                                $('#list').addRowData(ttt, {
+                                                    'ID': data[i][j][0],
+                                                    'is_R': data[i][j][1],
+                                                    'Text': data[i][j][2],
+                                                    'Class': data[i][j][3],
+                                                    'Date': data[i][j][4],
+                                                    'Timestamp': data[i][j][5]
+                                                });
+                                            }
+                                        }
+                                    }
+                                    // tweet displays //
+
+                                } else {
+                                    /* var leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1,
+                                        rightT = LTime + Math.round(lr / step) * step + window_width / 2;
+                                    */
+                                    leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1;
+                                    rightT = LTime + Math.round(lr / step) * step + window_width / 2;
+                                    ////////////////////////////////////haeyong///////////////////////////
+
+                                    var tset = getSimpleTimeSubset(hdata, leftT, rightT);
+
+
+                                    var i, N = 10,
+                                        E = 30,
+                                        C = 5,
+                                        d = 0.5,
+                                        clusters = [];
+
+                                    for (i = 0; i < C; i++) {
+                                        clusters.push({
+                                            'id': i,
+                                            'nodes': [],
+                                            'color': 'rgb(' + Math.round(Math.random() * 256) + ',' + Math.round(Math.random() * 256) + ',' + Math.round(Math.random() * 256) + ')'
+                                        });
+                                    }
+
+                                    for (i = 0; i < tset.nodes.length; i++) {
+                                        var cluster = clusters[(Math.random() * C) | 0];
+                                        sigInst.addNode(tset.nodes[i], {
+                                            'x': Math.random(),
+                                            'y': Math.random(),
+                                            // 'size':  0.5 + 4.5 * Math.random() ,
+                                            'size': 1,
+                                            'color': cluster['color'] //,
+                                            //'cluster': cluster['id']
+                                        });
+
+
+
+                                    }
+
+                                    for (i = 0; i < tset.edges.length; i++) {
+                                        sigInst.addEdge(tset.edges[i].eid, tset.edges[i].from, tset.edges[i].to);
+                                    }
+
+
+                                    var nodesformap = [];
+                                    neighborhoods = [];
+                                    deleteOverlays();
+                                    for (var i = 0; i < tset.nodes.length; i++) {
+                                        for (var i2 = 0; i2 < tset.edges.length; i2++) {
+                                            if (tset.nodes[i] == tset.edges[i2].from && parseInt(tset.edges[i2].lat) != 0) {
+                                                var lat1 = Math.random() * 0.1112;
+                                                var lat2 = Math.random() * 0.1112;
+
+
+                                                nodesformap.push({
+                                                    'id': tset.edges[i2].id,
+                                                    'name': tset.edges[i2].from,
+                                                    'timestamp': tset.edges[i2].timestamp,
+                                                    'lat': tset.edges[i2].lat,
+                                                    'lng': tset.edges[i2].lng
+                                                });
+                                                neighborhoods.push(new google.maps.LatLng(parseFloat(tset.edges[i2].lat) + lat1, parseFloat(tset.edges[i2].lng) + lat2));
+
+                                                addMarker2(tset.edges[i2].from, parseFloat(tset.edges[i2].lat) + lat1, parseFloat(tset.edges[i2].lng) + lat2);
+
+
+
+
+                                                break;
+                                            }
+                                        }
+
+                                    }
+
+
+                                    if (prevData != null) {
+                                        /////////////
+                                        var rNodes = getDiffNodes(prevData, tset, s, e);
+                                        for (var i = 0; i < rNodes.length; i++) {
+                                            sigInst.startForceAtlas2();
+                                            sigInst.dropNode(rNodes[i]);
+                                            //console.log(rNodes[i]);
+                                        }
+
+                                        //(getDiffNodes(prevData, subset, s, e)).forEach(hgraph.removeNode(nodes));
+                                        //console.log(getDiffNodes(prevData, subset, s, e))
+                                    }
+                                    //     console.log(JSON.stringify(getFormattedTimeSubset(data, s, e)))
+
+                                    // Start the ForceAtlas2 algorithm
+                                    // (requires "sigma.forceatlas2.js" to be included)
+                                    sigInst.startForceAtlas2();
+
+                                    sigInst.position(0, 0, 1).draw();
+
+                                    prevData = tset;
+
+                                    isRunning = true;
+
+                                    document.getElementById('stop-layout').childNodes[0].nodeValue = 'Connect Nodes';
+
+
+                                    /////////////////////////////////haeyong end//////////////////////////////////
+
+
+
+
+                                    var local_text = "" + format(new Date(leftT * 1000)) + "--" + format(new Date(rightT * 1000)) + ":";
+
+                                    $("#local_info").text(local_text).append("<br/>");
+
+                                    //local_data.push(data0[t][xr].y);
+                                    //local_text+=("cluster#"+cluster_n[t]+":"+(fdata[t][xr].y-10)+"  ");
+                                    var sum = 0;
+                                    for (var i = 0; i < data.length; i++) {
+                                        sum = 0;
+                                        for (var j = 0; j < data[n - 1 - i].length; j++) {
+                                            if (data[n - 1 - i][j][time] >= leftT && data[n - 1 - i][j][time] <= rightT) {
+                                                sum++;
+                                            }
+                                        }
+                                        //$("#local_info").append((""+cluster_n[n-1-i]+":"+sum)).append("<br/>");
+                                        $("#local_info").append(("" + clst[n - 1 - i] + ":" + sum)).append("<br/>");
+                                    };
+                                    //$("#local_info").text(local_text);
+                                    if (x > (20 + rec_width / 2 + 2) && x < (width - rec_width / 2 - 2)) { //within the range of the space
+                                        $("#rec").attr("x", x - rec_width / 2 - 2)
+                                            .attr("y", 2)
+                                            .attr("height", height + 46)
+                                            .attr("width", lw - x + 20);
+                                        $("#rec").show();
+                                        if (x < 20 + width / 2) {
+                                            $("#local_info").css("left", x + 50 + this.offsetLeft)
+                                                .css("y", 50).show();
+
+                                        } else {
+                                            $("#local_info").css("left", x - 50 - local_width + this.offsetLeft)
+                                                .css("top", 50).show();
+                                        }
+                                    } else {
+                                        $("#rec").hide("slow");
+                                        $("#local_info").hide("slow");
+                                    }
+                                    //var leftT=LTime+Math.round(xr/step)*step-window_width/2+1,
+                                    //  rightT=LTime+Math.round(xr/step)*step+window_width/2,
+                                    var ttt = 0; //row counter
+                                    //alert(""+leftT+","+rightT);
+
+                                    // tweet displays //
+                                    $('#list').jqGrid('clearGridData');
+                                    for (var i = 0; i < data.length; i++) {
+                                        for (var j = 0; j < data[i].length; j++) {
+                                            if (data[i][j][time] >= leftT && data[i][j][time] <= rightT) {
+                                                ttt++;
+                                                console.log(hdata.graph[i].from_user);
+                                                $('#list').addRowData(ttt, {
+                                                    'ID': data[i][j][0],
+                                                    'is_R': data[i][j][1],
+                                                    'Text': data[i][j][2],
+                                                    'Class': data[i][j][3],
+                                                    'Date': data[i][j][4],
+                                                    'Timestamp': data[i][j][5]
+                                                });
+                                            }
+                                        }
+                                    }
+
+                                    // tweet displays //
+                                }
+
+                            } else {
+                                MFlag = 1;
+                                MFlag2 = 1;
+                                var x = e.pageX - this.offsetLeft,
+                                    y = e.pageY - this.offsetTop,
+                                    xr = Math.round((x - svg_left_margin) / (width - svg_left_margin) * (RTime - LTime)),
+                                    //local_data=[],
+                                    format = d3.time.format("%H:%M %m/%d"),
+                                    dd = new Date((xr + LTime) * 1000);
+                                //local_text=""+format(dd)+":   ";
+                                /*var leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1,
+                                    rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+                                    */
+                                leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1;
+                                rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+
+                                var local_text = "" + format(new Date(leftT * 1000)) + "--" + format(new Date(rightT * 1000)) + ":";
+                                $("#local_info").text(local_text).append("<br/>");
+                                /*for(var t=0;t<n;t++){
+                //local_data.push(data0[t][xr].y);
+                //local_text+=("cluster#"+cluster_n[t]+":"+(fdata[t][xr].y-10)+"  ");
+                $("#local_info").append((""+cluster_n[n-1-t]+":"+(fdata[n-1-t][Math.round(xr/step)].y-0.1))).append("<br/>");
+            };*/
+                                var sum = 0;
+                                for (var i = 0; i < data.length; i++) {
+                                    sum = 0;
+                                    for (var j = 0; j < data[n - 1 - i].length; j++) {
+                                        if (data[n - 1 - i][j][time] >= leftT && data[n - 1 - i][j][time] <= rightT) {
+                                            sum++;
+                                        }
+                                    }
+                                    //$("#local_info").append((""+cluster_n[n-1-i]+":"+sum)).append("<br/>");
+                                    $("#local_info").append(("" + clst[n - 1 - i] + ":" + sum)).append("<br/>");
+                                };
+                                //$("#local_info").text(local_text);
+                                if ((x > (20 + rec_width / 2 + 2) && x < (width - rec_width / 2 - 2)) && (y > 2 && (y < height - 2))) { //within the range of the space
+                                    $("#rec").attr("x", x - rec_width / 2 - 2)
+                                        .attr("y", 2)
+                                        .attr("height", height + 46);
+                                    $("#rec").show();
+                                    if (x < 20 + width / 2) {
+                                        $("#local_info").css("left", x + 50 + this.offsetLeft)
+                                            .css("y", 50).show();
+
+                                    } else {
+                                        $("#local_info").css("left", x - 50 - local_width + this.offsetLeft)
+                                            .css("top", 50).show();
+                                    }
+                                } else {
+                                    $("#rec").hide("slow");
+                                    $("#local_info").hide("slow");
+                                }
+
+                                flag = 1; //fix the moving bar and little window
+
+                                /*function showExcel(l,r,data){//l,r left and right timestamp bound
+        for(var i=0;i<data.length;i++){
+            for(var j=0;j<data[i].length;j++){
+                if(data[i][time]>=l&&data[i][time]<=r){
+                    $('#list').addRowData({colN[0]:data[i][j][0],colN[1]:data[i][j][1],colN[2]:data[i][j][2],colN[3]:data[i][j][3],colN[4]:data[i][j][4],colN[5]:data[i][j][5]});
+                }
+            }
+        }
+    }*/
+
+                                //var colN=['No.','ID','Text','Class','Data','Timestamp'];
+
+                                /*var leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1,
+                                    rightT = LTime + Math.round(xr / step) * step + window_width / 2,
+                                    */
+                                leftT = LTime + Math.round(xr / step) * step - window_width / 2 + 1;
+                                rightT = LTime + Math.round(xr / step) * step + window_width / 2;
+                                var ttt = 0; //row counter
+                                //alert(""+leftT+","+rightT);
+
+                                $('#list').jqGrid('clearGridData');
+                                for (var i = 0; i < data.length; i++) {
+                                    for (var j = 0; j < data[i].length; j++) {
+                                        if (data[i][j][time] >= leftT && data[i][j][time] <= rightT) {
+                                            ttt++;
+
+                                            $('#list').addRowData(ttt, {
+                                                'ID': data[i][j][0],
+                                                'is_R': data[i][j][1],
+                                                'Text': data[i][j][2],
+                                                'Class': data[i][j][3],
+                                                'Date': data[i][j][4],
+                                                'Timestamp': data[i][j][5]
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    })
+                });
+            </script>
+    </body>
+
+</html>
