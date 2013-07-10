@@ -23,10 +23,10 @@
   Hurricane Isaac tweet classification/visualization
   (http://spare05.dlib.vt.edu/~ctrvis/phasevis/index_may.html)
 
-<strong>provis.css</strong>
- <br>css file related to provis visualization
+<strong>vis.css</strong>
+ <br>css file related to visual analytics tool
 
-<strong>provis_index.html</strong>
+<strong>vis_index.html</strong>
  <br>prototype user interface for visual analytics, which 
   communicates with Solr indexing engine in the backend.
   It also uses JSON files containing topic relatedness.
