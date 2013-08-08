@@ -9,6 +9,9 @@
  <br>it extracts Twitter user's location by visiting 
   the users' Twitter page
 
+<strong>format_converter.py</strong>
+ <br>it converts a two-column class-string data file into SVM-light, LibSVM, and Liblinear data format.
+
 <strong>lda_isaac12_resources.py</strong>
  <br>it runs LDA algorithm on a bunch of tweets about
   Hurricane Isaac disaster in 2012, then generates
